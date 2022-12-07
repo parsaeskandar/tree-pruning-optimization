@@ -1,4 +1,5 @@
 import bte
+import allel
 
 
 class Backbone:
@@ -30,7 +31,7 @@ class Backbone:
         :return: a set of MATNode that are the nodes we want to prune
         """
         # TODO: maybe check each internal for have at least threshold childs
-        # TODO: check prunning on the fly as it might work and make the program faster
+        # Trying pruning one the fly led to segmentation fault
 
         internal_node_ids = self.get_internal_nodes_with_tip_children()
 
@@ -40,7 +41,7 @@ class Backbone:
             # print(internal_node)
             counter = 0
             for child in internal_node.children:
-                if len(child.mutations) >= 1 and child.is_leaf():  # TODO: check if should just prune tip nodes
+                if len(child.mutations) >= 1 and child.is_leaf():  # should just prune tip nodes
                     prune_set.add(child.id)
                 else:
                     counter += 1
@@ -52,25 +53,39 @@ class Backbone:
         return prune_set
 
     def backbone_tree(self, threshold=2):
-        prunning_nodes = self.prune_nodes(threshold)
-        for id in prunning_nodes:
+        pruning_nodes = self.prune_nodes(threshold)
+        for id in pruning_nodes:
             self.tree.remove_node(id)
         return self.tree
 
 
-# texoniom
-
 if __name__ == '__main__':
     import time
 
-    first = time.time()
-    file_name = 'public-2021-07-07.all.masked.pb.gz'
-    tree = bte.MATree(file_name)
+    # TODO: saving pruned nodes can be with string type and then get all the node info from the actual tree
+    # first = time.time()
+    # # file_path = 'Data/public-latest.all.masked.pruned_tree_10_optimized_vcf_enabled.pb'
+    file_path = 'Data/public-latest.all.masked/public-latest.all.masked.pb.gz'
+    file_name = 'public-latest.all.masked.pb.gz'
+    tree = bte.MATree(file_path)
+
+    # print(len(tree.get_leaves()))
+    threshold = 10
     backbone = Backbone(tree)
-    print("original tree", tree)
-    print('original tree parsimony score', tree.get_parsimony_score())
-    new_tree = backbone.backbone_tree(5)
-    print("backbone tree", new_tree)
-    print("new tree parsimony score", new_tree.get_parsimony_score())
-    print(time.time() - first)
-    new_tree.save_pb(file_name[:-5] + "pruned_tree.pb")
+    new_tree = backbone.backbone_tree(threshold)
+    # Writing the retained ids to a file
+    #retained_nodes = new_tree.get_leaves()
+    #with open("retained_nodes_ids.txt", 'w') as f:
+    #    for item in retained_nodes:
+    #        f.write("%s\n" % item.id)
+
+    print(new_tree.get_parsimony_score())
+    # new_tree.save_pb(file_name[:-5] + "pruned_tree_new_k10.pb")
+    # print(new_tree.get_node("USA/UT-UPHL-220611544008/2022|ON787347.1|2022-05-23"))
+    # print("backbone tree", new_tree)
+    # print("new tree parsimony score", new_tree.get_parsimony_score())
+    # print(time.time() - first)
+    # print(pruned_ids)
+    # vcf = allel.read_vcf('sample.vcf')
+    
+    # print(vcf.headers)
